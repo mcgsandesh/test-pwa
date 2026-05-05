@@ -34,38 +34,35 @@ const firebaseConfig = {
     const messaging = firebase.messaging();
 
     // २. आयफ्रेम कडून (Google Script कडून) येणारा मेसेज ऐकणे
-    window.addEventListener('message', function(event) {
-        if (event.data === 'REQUEST_NOTIF_PERMISSION') {
-            console.log("🚀 Permission request received from Iframe");
-            askPermission();
-        }
-    });
+const scriptURL = "https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A"; 
+
+window.addEventListener('message', function(event) {
+    // फक्त गुगल स्क्रिप्ट कडून आलेले मेसेजेस स्वीकारा (सुरक्षेसाठी)
+    if (!event.origin.startsWith(scriptURL)) return;
+
+    if (event.data === 'REQUEST_NOTIF_PERMISSION') {
+        console.log("🚀 Permission request received from Google Script");
+        askPermission();
+    }
+}, false);
 
     // ३. परवानगी मागण्याचे मुख्य फंक्शन
+
     function askPermission() {
-        Notification.requestPermission().then((permission) => {
-            if (permission === 'granted') {
-                console.log("✅ Permission Granted on GitHub!");
-                
-                // टोकन मिळवा
-                messaging.getToken({ 
-                    vapidKey: 'BG1NQMsKIT6Kf4zKRPazypj-q-CGL0XUqzVwDp6EGmsVxR5W7e1T91Bi3rRcbN8oGCUbcEJqpW23BSrOXJskOCQ' 
-                })
-                .then((token) => {
-                    console.log("✅ Generated Token:", token);
-                    // हे टोकन आयफ्रेमच्या आत असलेल्या Google Script ला परत पाठवा
-                    const iframe = document.querySelector('iframe');
-                    iframe.contentWindow.postMessage({
-                        type: 'SAVE_TOKEN', 
-                        token: token
-                    }, '*');
-                })
-                .catch(err => console.error("❌ Token Error:", err));
-            } else {
-                alert("❌ तुम्ही नोटिफिकेशन नाकारले आहे.");
-            }
-        });
-    }
+    Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+            messaging.getToken({ vapidKey: 'BG1NQMsKIT6Kf4zKRPazypj-q-CGL0XUqzVwDp6EGmsVxR5W7e1T91Bi3rRcbN8oGCUbcEJqpW23BSrOXJskOCQ'})
+            .then((token) => {
+                const iframe = document.querySelector('iframe');
+                // मेसेज पाठवताना Google Script ची पूर्ण URL वापरा
+                iframe.contentWindow.postMessage({
+                    type: 'SAVE_TOKEN', 
+                    token: token
+                }, "https://script.google.com"); 
+            });
+        }
+    });
+}
 
     // ४. Service Worker Registration
     if ('serviceWorker' in navigator) {
