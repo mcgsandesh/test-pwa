@@ -39,23 +39,41 @@
   firebase.initializeApp(firebaseConfig);
   const messaging = firebase.messaging();
 
-  // ४. परवानगी मागण्याचे फंक्शन
-  function askNotification() {
-    Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        messaging.getToken({ vapidKey: 'BG1NQMsKIT6Kf4zKRPazypj-q-CGL0XUqzVwDp6EGmsVxR5W7e1T91Bi3rRcbN8oGCUbcEJqpW23BSrOXJskOCQ' }).then(token => {
-          // टोकन थेट गुगल शीटला पाठवा
+    function askNotification() {
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      
+      // १. फाईलचा अचूक पत्ता देऊन सर्विस वर्कर रजिस्टर करा
+      // जर तुमचे ॲप /test-pwa/ मध्ये असेल तर हा पत्ता अचूक काम करेल
+      navigator.serviceWorker.register('firebase-messaging-sw.js')
+      .then((registration) => {
+        console.log("✅ Service Worker Registered for Messaging");
+
+        messaging.getToken({ 
+          vapidKey: 'BG1NQMsKIT6Kf4zKRPazypj-q-CGL0XUqzVwDp6EGmsVxR5W7e1T91Bi3rRcbN8oGCUbcEJqpW23BSrOXJskOCQ', // तुमची खरी की इथे टाका
+          serviceWorkerRegistration: registration 
+        })
+        .then(token => {
           const scriptURL = "https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A/exec";
-          
           fetch(`${scriptURL}?action=saveToken&token=${token}`, { mode: 'no-cors' })
           .then(() => {
             alert("✅ यशस्वी! आता तुम्हाला अपडेट्स मिळतील.");
             document.getElementById('notif-bar').style.display = 'none';
           });
+        })
+        .catch(err => {
+          console.error("❌ Token Error:", err);
+          alert("टोकन मिळवण्यात अडचण आली: " + err.message);
         });
-      }
-    });
-  }
+
+      })
+      .catch(err => {
+        console.error("❌ SW Registration Error:", err);
+        alert("सर्व्हिस वर्कर नोंदणी अयशस्वी: " + err.message);
+      });
+    }
+  });
+}
 
   // ५. जर परवानगी नसेल तरच बटण दाखवा
   if (Notification.permission !== 'granted') {
