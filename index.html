@@ -58,7 +58,7 @@ window.addEventListener('message', function(event) {
                 iframe.contentWindow.postMessage({
                     type: 'SAVE_TOKEN', 
                     token: token
-                }, "https://script.google.com"); 
+                }, "*"); 
             });
         }
     });
