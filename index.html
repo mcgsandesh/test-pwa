@@ -12,16 +12,33 @@
     </style>
 </head>
 <body>
-    <iframe src="YOUR_GOOGLE_SCRIPT_EXEC_URL"></iframe>
+    <iframe src="https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A/exec"></iframe>
 
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('SW Registered'))
-                .catch(err => console.log('SW Failed', err));
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+            .then(reg => {
+                // यशस्वीरित्या रजिस्टर झाल्यावर
+                console.log('✅ PWA: Service Worker Registered Successfully! Scope:', reg.scope);
+            })
+            .catch(err => {
+                // जर काही एरर आला तर
+                console.error('❌ PWA: Service Worker Registration Failed:', err);
             });
-        }
-    </script>
+        });
+    } else {
+        console.warn('⚠️ PWA: Service Worker is not supported in this browser.');
+    }
+
+    // Iframe लोड झाला की नाही हे पाहण्यासाठी
+    const iframe = document.querySelector('iframe');
+    iframe.onload = function() {
+        console.log('✅ App: Google Script Web App loaded inside Iframe.');
+    };
+    iframe.onerror = function() {
+        console.error('❌ App: Failed to load Google Script Iframe.');
+    };
+</script>
 </body>
 </html>
