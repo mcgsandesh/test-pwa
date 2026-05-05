@@ -1,0 +1,20 @@
+{
+  "name": "KV Digital Society App",
+  "short_name": "KV Digital",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2196F3",
+  "icons": [
+    {
+      "src": "https://static.wixstatic.com/media/6e8dcf_874c769fafb94e66869070444347a01f~mv2.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://static.wixstatic.com/media/6e8dcf_874c769fafb94e66869070444347a01f~mv2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
