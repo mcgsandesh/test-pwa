@@ -4,12 +4,13 @@ importScripts('https://www.gstatic.com/firebasejs/9.1.0/firebase-messaging-compa
 
 // २. तुमचा Firebase Config इथे टाका
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyBfDsCvNBb6SVhz0Z8P5p3s5jIGVZQYTPc",
+    authDomain: "kv-digital-society.firebaseapp.com",
+    projectId: "kv-digital-society",
+    storageBucket: "kv-digital-society.firebasestorage.app",
+    messagingSenderId: "524643551701",
+    appId: "1:524643551701:web:4f32cc6dc24b9bb48c155c",
+    measurementId: "G-QPNLYDJ7FZ"
 };
 
 // ३. Firebase आणि Messaging इनिशियलाइज करा
