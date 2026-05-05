@@ -10,39 +10,73 @@
         body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; background-color: #ffffff; }
         iframe { width: 100%; height: 100%; border: none; }
     </style>
+    <!-- Firebase SDK (GitHub स्तरावर लोड करणे आवश्यक आहे) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 </head>
 <body>
    <iframe src="https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A/exec"></iframe> 
-    // link genrated for testin 
-   <!--  <iframe src="https://script.google.com/macros/s/AKfycbyJHompcLHIMM4r59lS-7WJwuuMTOUVgR7xlZDiTEgdJzKrZIo-6cqsGVaa4dEl7VHh2A/exec"></iframe>-->
    
-
 <script>
+    // १. Firebase Config (GitHub वर टाका)
+    var firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+    
+    // Firebase Initialize
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+
+    // २. आयफ्रेम कडून (Google Script कडून) येणारा मेसेज ऐकणे
+    window.addEventListener('message', function(event) {
+        if (event.data === 'REQUEST_NOTIF_PERMISSION') {
+            console.log("🚀 Permission request received from Iframe");
+            askPermission();
+        }
+    });
+
+    // ३. परवानगी मागण्याचे मुख्य फंक्शन
+    function askPermission() {
+        Notification.requestPermission().then((permission) => {
+            if (permission === 'granted') {
+                console.log("✅ Permission Granted on GitHub!");
+                
+                // टोकन मिळवा
+                messaging.getToken({ 
+                    vapidKey: 'YOUR_VAPID_KEY' 
+                })
+                .then((token) => {
+                    console.log("✅ Generated Token:", token);
+                    // हे टोकन आयफ्रेमच्या आत असलेल्या Google Script ला परत पाठवा
+                    const iframe = document.querySelector('iframe');
+                    iframe.contentWindow.postMessage({
+                        type: 'SAVE_TOKEN', 
+                        token: token
+                    }, '*');
+                })
+                .catch(err => console.error("❌ Token Error:", err));
+            } else {
+                alert("❌ तुम्ही नोटिफिकेशन नाकारले आहे.");
+            }
+        });
+    }
+
+    // ४. Service Worker Registration
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js')
-            .then(reg => {
-                // यशस्वीरित्या रजिस्टर झाल्यावर
-                console.log('✅ PWA: Service Worker Registered Successfully! Scope:', reg.scope);
-            })
-            .catch(err => {
-                // जर काही एरर आला तर
-                console.error('❌ PWA: Service Worker Registration Failed:', err);
-            });
+            .then(reg => console.log('✅ SW Registered:', reg.scope))
+            .catch(err => console.error('❌ SW Failed:', err));
         });
-    } else {
-        console.warn('⚠️ PWA: Service Worker is not supported in this browser.');
     }
-    
 
-    // Iframe लोड झाला की नाही हे पाहण्यासाठी
     const iframe = document.querySelector('iframe');
-    iframe.onload = function() {
-        console.log('✅ App: Google Script Web App loaded inside Iframe.');
-    };
-    iframe.onerror = function() {
-        console.error('❌ App: Failed to load Google Script Iframe.');
-    };
+    iframe.onload = () => console.log('✅ App Loaded inside Iframe.');
 </script>
 </body>
 </html>
