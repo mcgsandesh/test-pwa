@@ -134,7 +134,7 @@ window.onload = function() {
     const isRegistered = localStorage.getItem("notif_registered_user");
     
     // जर परवानगी नसेल किंवा या युजरने अजून रजिस्टर केले नसेल तरच बार दाखवा
-    if (Notification.permission !== 'granted' || isRegistered !== "true") {
+    if (isRegistered !== "true") {
       document.getElementById('notif-bar').style.display = 'block';
     } else {
     document.getElementById('notif-bar').style.display = 'none';
