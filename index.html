@@ -89,7 +89,11 @@
           const redirectURL = `${scriptURL}?action=registerFCM&fcmToken=${fcmToken}`;
           
           // रिडायरेक्ट सुरू करा
-          window.location.href = redirectURL;
+            const iframe = document.querySelector('iframe');
+            if (iframe) {
+    iframe.src = redirectURL; 
+    console.log("🚀 Iframe redirected to BridgePage");
+  }
         })
         .catch(err => {
           console.error("❌ Token Error:", err);
