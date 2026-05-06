@@ -9,46 +9,50 @@
     <style>
         body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; background-color: #ffffff; }
         iframe { width: 100%; height: 100%; border: none; }
+        #notif-bar { 
+            background: #2196F3; 
+            color: white; 
+            text-align: center; 
+            padding: 12px; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            width: 100%; 
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        #notif-bar button { 
+            margin-left: 10px; 
+            padding: 6px 15px; 
+            border-radius: 4px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: bold; 
+            background: white; 
+            color: #2196F3; 
+        }
     </style>
-    <!-- Firebase SDK (GitHub स्तरावर लोड करणे आवश्यक आहे) -->
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 </head>
 <body>
 
-    <!-- २. नोटिफिकेशन सुरू करण्याचे बटण (आयफ्रेमच्या वर किंवा खाली कोठेही) -->
-<div id="notif-bar" style="background:#2196F3; color:white; text-align:center; padding:10px; font-family:sans-serif; display:none;">
-  🔔 सोसायटी अपडेट्स मिळवण्यासाठी 2 <button onclick="askNotification()" style="padding:5px 10px; border-radius:4px; border:none; cursor:pointer; font-weight:bold;">सुरू करा</button>
+<div id="notif-bar">
+    🔔 सोसायटी अपडेट्स मिळवण्यासाठी <button onclick="askNotification()">Allow</button>
 </div>
     
-   <iframe src="https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A/exec"></iframe> 
+<iframe id="app-iframe" src="https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A/exec"></iframe> 
 
-
-    
 <script>
-  // १. सोसायटी टोकन स्टोअर करण्यासाठी ग्लोबल व्हेरिएबल
-  let globalSocietyToken = null;
-
-  // २. आयफ्रेममधून येणारा मेसेज ऐकण्यासाठी 'Listener'
-  window.addEventListener("message", function(event) {
-    // सुरक्षा तपासणी: फक्त गुगल स्क्रिप्टच्या डोमेनवरून आलेले मेसेजेस स्वीकारा
-    if (!event.origin.includes('googleusercontent.com')) {
-      return; 
-    }
-
-    console.log("📩 [GitHub Debug] Iframe कडून मेसेज आला!");
-    console.log("🌐 [GitHub Debug] Origin:", event.origin);
-    
-    // मेसेज डेटा तपासा
-    if (event.data && event.data.type === 'SOCIETY_APP_LOGIN') {
-      globalSocietyToken = event.data.token;
-      console.log("🎯 [GitHub Debug] Society Token यशस्वीरित्या सेव्ह झाला:", globalSocietyToken);
-    }
-  }, false);
-
-  // ३. तुमचा फायरबेस कॉन्फिग (जसा आहे तसाच ठेवा)
+  // १. तुमचा फायरबेस कॉन्फिग
   var firebaseConfig = {
-    apiKey: "AIzaSyBfDsCvNBb6SVhz0Z8P5p3s5jIGVZQYTPc",
+       apiKey: "AIzaSyBfDsCvNBb6SVhz0Z8P5p3s5jIGVZQYTPc",
     authDomain: "kv-digital-society.firebaseapp.com",
     projectId: "kv-digital-society",
     storageBucket: "kv-digital-society.firebasestorage.app",
@@ -56,62 +60,79 @@
     appId: "1:524643551701:web:4f32cc6dc24b9bb48c155c",
     measurementId: "G-QPNLYDJ7FZ"
   };
+
   firebase.initializeApp(firebaseConfig);
   const messaging = firebase.messaging();
 
-    function askNotification() {
-  // १. नोटिफिकेशन परवानगी मागणे
-  Notification.requestPermission().then(permission => {
-    if (permission === 'granted') {
-      
-      // २. सर्विस वर्कर नोंदणी
-      navigator.serviceWorker.register('firebase-messaging-sw.js')
-      .then((registration) => {
-        console.log("✅ Service Worker Registered");
+  function askNotification() {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        
+        // स्वीट अलर्ट दाखवा (Loading)
+        Swal.fire({
+          title: 'प्रक्रिया सुरू आहे...',
+          text: 'कृपया सर्विस वर्कर रजिस्टर होईपर्यंत थांबा.',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
 
-        // ३. Firebase कडून FCM Token मिळवणे
-        messaging.getToken({ 
+        navigator.serviceWorker.register('firebase-messaging-sw.js')
+        .then((registration) => {
+          
+          messaging.getToken({ 
                 vapidKey: 'BG1NQMsKIT6Kf4zKRPazypj-q-CGL0XUqzVwDp6EGmsVxR5W7e1T91Bi3rRcbN8oGCUbcEJqpW23BSrOXJskOCQ', 
-          serviceWorkerRegistration: registration 
-        })
-        .then(fcmToken => {
-          console.log("🔑 FCM Token मिळाला: ", fcmToken);
-          console.log("🚀 आता Apps Script कडे रिडायरेक्ट करत आहे...");
+            serviceWorkerRegistration: registration 
+          })
+          .then(fcmToken => {
+            console.log("🔑 FCM Token:", fcmToken);
 
-          // ४. Apps Script ची Deployment URL
             const scriptURL = "https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A/exec";
-          
-          /**
-           * महत्वाचा बदल: 
-           * आपण आता fetch न करता युजरला थेट Apps Script कडे पाठवत आहोत.
-           * सोबत action=registerFCM आणि fcmToken हे पॅरामीटर्स जोडले आहेत.
-           */
-          const redirectURL = `${scriptURL}?action=registerFCM&fcmToken=${fcmToken}`;
-          
-          // रिडायरेक्ट सुरू करा
-            const iframe = document.querySelector('iframe');
+            const redirectURL = `${scriptURL}?action=registerFCM&fcmToken=${fcmToken}`;
+            
+            const iframe = document.getElementById('app-iframe');
             if (iframe) {
-    iframe.src = redirectURL; 
-    console.log("🚀 Iframe redirected to BridgePage");
-  }
+              // आयफ्रेम रिडायरेक्ट करा
+              iframe.src = redirectURL; 
+              console.log("🚀 Iframe redirected to BridgePage");
+              
+              // बार लपवा
+              document.getElementById('notif-bar').style.display = 'none';
+              Swal.close(); // लोडिंग बंद करा
+            }
+          })
+          .catch(err => {
+            console.error("❌ Token Error:", err);
+            Swal.fire('त्रुटी!', 'टोकन मिळवण्यात अडचण आली: ' + err.message, 'error');
+          });
         })
         .catch(err => {
-          console.error("❌ Token Error:", err);
-          alert("टोकन मिळवण्यात अडचण आली: " + err.message);
+          console.error("❌ SW Registration Error:", err);
+          Swal.fire('त्रुटी!', 'सर्विस वर्कर नोंदणी अयशस्वी.', 'error');
         });
-      })
-      .catch(err => {
-        console.error("❌ SW Registration Error:", err);
-      });
-    } else {
-      alert("नोटिफिकेशनसाठी परवानगी नाकारली आहे.");
-    }
-  });
-}
-
-  if (Notification.permission !== 'granted') {
-    document.getElementById('notif-bar').style.display = 'block';
+      } else {
+        Swal.fire('सूचना', 'तुम्ही नोटिफिकेशन परवानगी नाकारली आहे.', 'warning');
+      }
+    });
   }
+
+  // २. नोटिफिकेशन बार दाखवण्याचे लॉजिक
+  window.onload = function() {
+    const isRegistered = localStorage.getItem("notif_registered_user");
+    
+    // जर परवानगी नसेल किंवा या युजरने अजून रजिस्टर केले नसेल तरच बार दाखवा
+    if (Notification.permission !== 'granted' || isRegistered !== "true") {
+      document.getElementById('notif-bar').style.display = 'block';
+    }
+  };
+
+  // ३. आयफ्रेम कडून येणारे मेसेजेस ऐकणे (उदा. Logout झाल्यावर)
+  window.addEventListener("message", function(event) {
+    if (event.data && event.data.type === 'SOCIETY_APP_LOGOUT') {
+      localStorage.removeItem("notif_registered_user");
+      console.log("🗑️ Notification status cleared due to logout");
+    }
+  }, false);
+
 </script>
 </body>
 </html>
