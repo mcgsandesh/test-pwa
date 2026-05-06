@@ -136,7 +136,9 @@ window.onload = function() {
     // जर परवानगी नसेल किंवा या युजरने अजून रजिस्टर केले नसेल तरच बार दाखवा
     if (Notification.permission !== 'granted' || isRegistered !== "true") {
       document.getElementById('notif-bar').style.display = 'block';
-    }
+    } else {
+    document.getElementById('notif-bar').style.display = 'none';
+  }
   };
 
   // ३. आयफ्रेम कडून येणारे मेसेजेस ऐकणे (उदा. Logout झाल्यावर)
