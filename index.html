@@ -80,52 +80,42 @@
   const messaging = firebase.messaging();
 
  function askNotification() {
-  // १. परवानगी मागणे
   Notification.requestPermission().then(permission => {
     if (permission === 'granted') {
       
-      // लोडिंग सुरुवातीला न दाखवता, आपण फक्त 'Status' बदलूया
       const bar = document.getElementById('notif-bar');
-      bar.innerHTML = "⏳ टोकन मिळवत आहे, कृपया थांबा...";
+      bar.innerHTML = "⏳ प्रक्रिया सुरू आहे (टोकन मिळवत आहे)...";
 
       navigator.serviceWorker.register('firebase-messaging-sw.js')
-        .then(reg => {
-          // सर्विस वर्कर रेडी असल्याची खात्री
-          return navigator.serviceWorker.ready;
-        })
-        .then(readyReg => {
-          // २. टोकन मिळवणे (इथेच वेळ लागू शकतो)
-          return messaging.getToken({ 
-            vapidKey: 'BG1NQMsKIT6Kf4zKRPazypj-q-CGL0XUqzVwDp6EGmsVxR5W7e1T91Bi3rRcbN8oGCUbcEJqpW23BSrOXJskOCQ', // की बरोबर असल्याची खात्री करा
-            serviceWorkerRegistration: readyReg 
-          });
-        })
-        .then(fcmToken => {
-          if (fcmToken) {
-            console.log("✅ टोकन मिळाला!");
-            
-            // ३. आता रिडायरेक्ट करा
-            const scriptURL = "https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A/exec";
-            const finalURL = `${scriptURL}?action=registerFCM&fcmToken=${fcmToken}`;
-            
-            // SweetAlert फक्त रिडायरेक्टच्या वेळी दाखवूया
-            Swal.fire({
-              title: 'प्रक्रिया पूर्ण!',
-              text: 'आता आपण मुख्य पेजवर जात आहोत.',
-              icon: 'success',
-              timer: 2000,
-              showConfirmButton: false
-            });
+      .then((registration) => {
+        return navigator.serviceWorker.ready;
+      })
+      .then((readyRegistration) => {
+        console.log("✅ Service Worker Ready");
 
-            const iframe = document.querySelector('iframe');
-            if (iframe) { iframe.src = finalURL; }
-          }
-        })
-        .catch(err => {
-          console.error("❌ एरर:", err);
-          alert("काहीतरी चुकले: " + err.message);
-          bar.innerHTML = "❌ एरर आली आहे. कृपया पेज रिफ्रेश करा.";
+        return messaging.getToken({ 
+          vapidKey: 'BG1NQMsKIT6Kf4zKRPazypj-q-CGL0XUqzVwDp6EGmsVxR5W7e1T91Bi3rRcbN8oGCUbcEJqpW23BSrOXJskOCQ', // तुमची की तपासा
+          serviceWorkerRegistration: readyRegistration 
         });
+      })
+      .then(fcmToken => {
+        console.log("🔑 FCM Token मिळाला:", fcmToken);
+        
+        const scriptURL = "https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A/exec";
+        const finalURL = `${scriptURL}?action=registerFCM&fcmToken=${fcmToken}`;
+        
+        const iframe = document.querySelector('iframe');
+        if (iframe) {
+          // थेट रिडायरेक्ट
+          iframe.src = finalURL; 
+          console.log("🚀 Iframe redirected to BridgePage");
+          bar.style.display = 'none'; // बार लपवून टाका
+        }
+      })
+      .catch(err => {
+        console.error("❌ Error:", err);
+        bar.innerHTML = "⚠️ त्रुटी: " + err.message;
+      });
     }
   });
 }
