@@ -80,55 +80,60 @@
   const messaging = firebase.messaging();
 
   function askNotification() {
-    Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      
+      Swal.fire({
+        title: 'प्रक्रिया सुरू आहे...',
+        text: 'सर्व्हिस वर्कर सक्रिय (Active) होण्याची वाट पाहत आहे...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      // १. सर्विस वर्कर रजिस्टर करा
+      navigator.serviceWorker.register('firebase-messaging-sw.js')
+      .then((registration) => {
+        console.log("✅ Service Worker Registered");
+
+        // २. सर्वात महत्त्वाचे: सर्विस वर्कर 'Active' होईपर्यंत थांबा
+        // यामुळे 'pushManager' undefined येणार नाही
+        return new Promise((resolve) => {
+          if (registration.active) {
+            resolve(registration);
+          } else {
+            let serviceWorker = registration.installing || registration.waiting;
+            serviceWorker.addEventListener('statechange', (e) => {
+              if (e.target.state === 'activated') resolve(registration);
+            });
+          }
+        });
+      })
+      .then((activeReg) => {
+        console.log("🚀 Service Worker आता Active आहे, टोकन मिळवत आहे...");
         
-        // स्वीट अलर्ट दाखवा (Loading)
-        Swal.fire({
-          title: 'प्रक्रिया सुरू आहे...',
-          text: 'कृपया सर्विस वर्कर रजिस्टर होईपर्यंत थांबा.',
-          allowOutsideClick: false,
-          didOpen: () => { Swal.showLoading(); }
+        // ३. आता टोकन मिळवा
+        return messaging.getToken({ 
+          vapidKey: 'xxxxxxxxxxxxxx', // तुमची की तपासा
+          serviceWorkerRegistration: activeReg 
         });
-
-        navigator.serviceWorker.register('firebase-messaging-sw.js')
-        .then((registration) => {
-          
-          messaging.getToken({ 
-                vapidKey: 'BG1NQMsKIT6Kf4zKRPazypj-q-CGL0XUqzVwDp6EGmsVxR5W7e1T91Bi3rRcbN8oGCUbcEJqpW23BSrOXJskOCQ', 
-            serviceWorkerRegistration: registration 
-          })
-          .then(fcmToken => {
-            console.log("🔑 FCM Token:", fcmToken);
-
-            const scriptURL = "https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A/exec";
-            const redirectURL = `${scriptURL}?action=registerFCM&fcmToken=${fcmToken}`;
-            
-            const iframe = document.getElementById('app-iframe');
-            if (iframe) {
-              // आयफ्रेम रिडायरेक्ट करा
-              iframe.src = redirectURL; 
-              console.log("🚀 Iframe redirected to BridgePage");
-              
-              // बार लपवा
-              document.getElementById('notif-bar').style.display = 'none';
-              Swal.close(); // लोडिंग बंद करा
-            }
-          })
-          .catch(err => {
-            console.error("❌ Token Error:", err);
-            Swal.fire('त्रुटी!', 'टोकन मिळवण्यात अडचण आली: ' + err.message, 'error');
-          });
-        })
-        .catch(err => {
-          console.error("❌ SW Registration Error:", err);
-          Swal.fire('त्रुटी!', 'सर्विस वर्कर नोंदणी अयशस्वी.', 'error');
-        });
-      } else {
-        Swal.fire('सूचना', 'तुम्ही नोटिफिकेशन परवानगी नाकारली आहे.', 'warning');
-      }
-    });
-  }
+      })
+      .then(fcmToken => {
+        const scriptURL = "https://script.google.com/macros/s/xxxxxxxxxxxxxxxxxxxx/exec";
+        const redirectURL = `${scriptURL}?action=registerFCM&fcmToken=${fcmToken}`;
+        
+        const iframe = document.getElementById('app-iframe');
+        if (iframe) {
+          iframe.src = redirectURL; 
+          Swal.close();
+        }
+      })
+      .catch(err => {
+        console.error("❌ Error details:", err);
+        Swal.fire('त्रुटी!', 'काहीतरी चुकले: ' + err.message, 'error');
+      });
+    }
+  });
+}
 
   // २. नोटिफिकेशन बार दाखवण्याचे लॉजिक
   window.onload = function() {
