@@ -59,48 +59,51 @@
   firebase.initializeApp(firebaseConfig);
   const messaging = firebase.messaging();
 
-  function askNotification() {
-    // टोकन मिळाला आहे का ते तपासा (Debug साठी)
-    if (!globalSocietyToken) {
-      console.warn("⚠️ [GitHub Debug] अजून Society Token मिळालेला नाही. बॅकएंड व्हॅलिडेशन निकामी होऊ शकते.");
-    }
+    function askNotification() {
+  // १. नोटिफिकेशन परवानगी मागणे
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      
+      // २. सर्विस वर्कर नोंदणी
+      navigator.serviceWorker.register('firebase-messaging-sw.js')
+      .then((registration) => {
+        console.log("✅ Service Worker Registered");
 
-    Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        navigator.serviceWorker.register('firebase-messaging-sw.js')
-        .then((registration) => {
-          console.log("✅ Service Worker Registered");
+        // ३. Firebase कडून FCM Token मिळवणे
+        messaging.getToken({ 
+                vapidKey: 'BG1NQMsKIT6Kf4zKRPazypj-q-CGL0XUqzVwDp6EGmsVxR5W7e1T91Bi3rRcbN8oGCUbcEJqpW23BSrOXJskOCQ', 
+          serviceWorkerRegistration: registration 
+        })
+        .then(fcmToken => {
+          console.log("🔑 FCM Token मिळाला: ", fcmToken);
+          console.log("🚀 आता Apps Script कडे रिडायरेक्ट करत आहे...");
 
-          messaging.getToken({ 
-            vapidKey: 'BG1NQMsKIT6Kf4zKRPazypj-q-CGL0XUqzVwDp6EGmsVxR5W7e1T91Bi3rRcbN8oGCUbcEJqpW23BSrOXJskOCQ', 
-            serviceWorkerRegistration: registration 
-          })
-          .then(token => {
-            console.log("🔑 [GitHub Debug] FCM Token मिळाला:", token);
-
-            // ४. आता दोन्ही टोकन्स बॅकएंडला पाठवा
+          // ४. Apps Script ची Deployment URL
             const scriptURL = "https://script.google.com/macros/s/AKfycbxz_apAe1hrJ4VZqi0u1uAdTTGnAPRZZ5POL4h7B8gUz8U4WcE9CX3c-027php-33Y50A/exec";
-            
-            // fetch मध्ये appToken (Society Token) सुद्धा जोडा
-            const finalURL = `${scriptURL}?action=saveToken&token=${token}&appToken=${globalSocietyToken || ''}`;
-            
-            console.log("📤 [GitHub Debug] बॅकएंडला डेटा पाठवत आहे...");
-
-            fetch(finalURL, { mode: 'no-cors' })
-            .then(() => {
-              alert("✅ यशस्वी! आता तुम्हाला अपडेट्स मिळतील.");
-              document.getElementById('notif-bar').style.display = 'none';
-            })
-            .catch(err => console.error("❌ Fetch Error:", err));
-          })
-          .catch(err => {
-            console.error("❌ Token Error:", err);
-            alert("टोकन मिळवण्यात अडचण आली: " + err.message);
-          });
+          
+          /**
+           * महत्वाचा बदल: 
+           * आपण आता fetch न करता युजरला थेट Apps Script कडे पाठवत आहोत.
+           * सोबत action=registerFCM आणि fcmToken हे पॅरामीटर्स जोडले आहेत.
+           */
+          const redirectURL = `${scriptURL}?action=registerFCM&fcmToken=${fcmToken}`;
+          
+          // रिडायरेक्ट सुरू करा
+          window.location.href = redirectURL;
+        })
+        .catch(err => {
+          console.error("❌ Token Error:", err);
+          alert("टोकन मिळवण्यात अडचण आली: " + err.message);
         });
-      }
-    });
-  }
+      })
+      .catch(err => {
+        console.error("❌ SW Registration Error:", err);
+      });
+    } else {
+      alert("नोटिफिकेशनसाठी परवानगी नाकारली आहे.");
+    }
+  });
+}
 
   if (Notification.permission !== 'granted') {
     document.getElementById('notif-bar').style.display = 'block';
