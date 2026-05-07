@@ -31,6 +31,34 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
+
+// ५. नोटिफिकेशनवर क्लिक केल्यावर ॲप उघडण्यासाठी
+self.addEventListener('notificationclick', function(event) {
+  console.log('Notification click received.');
+
+  // १. नोटिफिकेशन बंद करा
+  event.notification.close();
+
+  // २. तुमची GitHub PWA ची लिंक (मूळ URL)
+  const appUrl = 'https://mcgsandesh.github.io/test-pwa/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
+      // जर ॲप आधीच उघडं असेल, तर नवीन विंडो उघडण्याऐवजी त्यावरच जा (Focus)
+      for (var i = 0; i < windowClients.length; i++) {
+        var client = windowClients[i];
+        if (client.url === appUrl && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // जर ॲप उघडं नसेल, तर नवीन विंडोमध्ये उघडा
+      if (clients.openWindow) {
+        return clients.openWindow(appUrl);
+      }
+    })
+  );
+});
+
 // ५. तुमचे आधीचे बेसिक इव्हेंट लिसनर्स तसेच राहू द्या
 self.addEventListener('install', (event) => {
     self.skipWaiting();
